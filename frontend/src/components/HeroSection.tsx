@@ -48,7 +48,7 @@ export default function HeroSection({ onStartScan, onLoadDemo, loading }: HeroSe
       <div className={`absolute inset-0 z-[1] pointer-events-none ${isMobile ? "bg-black/10" : "bg-black/30"}`} />
 
       {/* Content container */}
-      <div className="relative z-10 pointer-events-none w-full max-w-[95%] sm:max-w-md lg:max-w-2xl px-4 sm:px-6 md:px-10 pb-8 sm:pb-10 pt-24 sm:pt-32">
+      <div className="relative z-10 w-full max-w-[95%] sm:max-w-md lg:max-w-2xl px-4 sm:px-6 md:px-10 pb-8 sm:pb-10 pt-24 sm:pt-32">
         {/* Heading */}
         <h1
           className="text-[clamp(2.25rem,8vw,6rem)] font-bold leading-[1.05] tracking-[-0.05em] text-foreground mb-2 md:mb-4 uppercase opacity-0 animate-fade-up"

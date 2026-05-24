@@ -209,6 +209,29 @@ DEMO_ATTACK_PATHS = [
 ]
 
 
+def fetch_ip_geojson(ip: str) -> dict:
+    """Fetch public Geo-IP and ISP metadata for public IPs to enrich dashboard."""
+    import httpx
+    try:
+        clean_ip = ip.strip().split("/")[0]
+        # Skip private/local IPs
+        if clean_ip in ("127.0.0.1", "localhost") or clean_ip.startswith(("10.", "192.168.", "172.16.", "172.17.", "172.18.", "172.19.", "172.20.", "172.21.", "172.22.", "172.23.", "172.24.", "172.25.", "172.26.", "172.27.", "172.28.", "172.29.", "172.30.", "172.31.")):
+            return {}
+        
+        resp = httpx.get(f"http://ip-api.com/json/{clean_ip}", timeout=2.0)
+        if resp.status_code == 200:
+            data = resp.json()
+            if data.get("status") == "success":
+                return {
+                    "isp": data.get("isp", "Unknown ISP"),
+                    "city": data.get("city", ""),
+                    "country": data.get("country", ""),
+                }
+    except Exception:
+        pass
+    return {}
+
+
 def build_demo_scan(session_id: str, target: str = None) -> ScanSession:
     """Build complete demo scan session, optionally customized with a target IP/network."""
     nodes = DEMO_NODES
@@ -228,18 +251,28 @@ def build_demo_scan(session_id: str, target: str = None) -> ScanSession:
             except ValueError:
                 target_ip = target_ip.split("/")[0]
 
+        # Fetch real GeoIP data if available
+        geoip = fetch_ip_geojson(target_ip)
+
         # Customize entry node ID and hostname
         nodes = []
         for n in DEMO_NODES:
             if n.id == "203.0.113.45":
                 new_n = n.model_copy(deep=True)
                 new_n.id = target_ip
-                if target_ip in ("127.0.0.1", "localhost"):
-                    new_n.hostname = "local-loopback"
-                elif "." in target_ip and all(p.isdigit() for p in target_ip.split(".")):
-                    new_n.hostname = f"host-{target_ip.split('.')[-1]}"
+                if geoip:
+                    new_n.hostname = f"isp-{geoip['isp'].lower().replace(' ', '-')}"
+                    new_n.os = f"Linux / Windows (Geo: {geoip['city']}, {geoip['country']})"
                 else:
-                    new_n.hostname = target_ip.split(".")[0]
+                    if target_ip in ("127.0.0.1", "localhost"):
+                        new_n.hostname = "local-loopback"
+                        new_n.os = "macOS (Localhost)"
+                    elif "." in target_ip and all(p.isdigit() for p in target_ip.split(".")):
+                        new_n.hostname = f"host-{target_ip.split('.')[-1]}"
+                        new_n.os = "Ubuntu 22.04"
+                    else:
+                        new_n.hostname = target_ip.split(".")[0]
+                        new_n.os = "Ubuntu 22.04"
                 nodes.append(new_n)
             else:
                 nodes.append(n.model_copy(deep=True))

@@ -8,7 +8,7 @@ export default function AttackPathList() {
   const [expandedPath, setExpandedPath] = useState<string | null>(null)
   const [storyMode, setStoryMode] = useState<Record<string, boolean>>({})
 
-  if (!attackPaths.length) return null
+  if (!attackPaths || !attackPaths.length) return null
 
   const toggleExpand = (pathId: string) => {
     setExpandedPath(expandedPath === pathId ? null : pathId)

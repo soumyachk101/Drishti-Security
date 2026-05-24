@@ -1,10 +1,11 @@
 """Drishti — AI-Powered Network Risk Intelligence platform."""
 
 import uuid
+import threading
 from contextlib import asynccontextmanager
 
 import networkx as nx
-from fastapi import FastAPI, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, WebSocket, WebSocketDisconnect, BackgroundTasks
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -93,14 +94,20 @@ async def load_demo():
 
 
 @app.post("/api/v1/scan/start")
-async def start_scan(req: ScanStartRequest):
-    """Start a real network scan against the target."""
+async def start_scan(req: ScanStartRequest, bg: BackgroundTasks):
+    """Start a network scan — returns immediately, scans in background."""
     session_id = f"scan-{str(uuid.uuid4())[:6]}"
-    nodes = scan_target(req.target_network)
-    if not nodes:
-        return {"error": "No hosts discovered. Check the target range."}, 404
-    _build_session(session_id, nodes)
-    return {"session_id": session_id, "status": "complete", "hosts_found": len(nodes)}
+    sessions[session_id] = ScanSession(id=session_id, status="scanning")
+
+    def _run_scan():
+        nodes = scan_target(req.target_network)
+        if nodes:
+            _build_session(session_id, nodes)
+        else:
+            sessions[session_id].status = "error"
+
+    bg.add_task(_run_scan)
+    return {"session_id": session_id, "status": "scanning"}
 
 
 @app.get("/api/v1/scan/{session_id}")

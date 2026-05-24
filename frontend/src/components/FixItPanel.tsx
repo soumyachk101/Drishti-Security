@@ -121,7 +121,7 @@ export default function FixItPanel() {
                 Open Ports
               </h4>
               <div className="flex flex-wrap gap-1.5">
-                {selectedNode.open_ports.map((p) => (
+                {(selectedNode.open_ports || []).map((p) => (
                   <div
                     key={p.port}
                     className="flex items-center gap-1.5 bg-dark-700 border border-dark-600 rounded-md px-2.5 py-1.5 text-xs"
@@ -143,7 +143,7 @@ export default function FixItPanel() {
               Vulnerabilities ({selectedNode.vulnerabilities.length})
             </h4>
             <div className="space-y-2.5">
-              {selectedNode.vulnerabilities.map((v) => {
+              {(selectedNode.vulnerabilities || []).map((v) => {
                 const severity = getSeverity(v.cvss_v3)
                 const sev = SEVERITY_CONFIG[severity]
                 const isGenerating = generatingFor === v.cve_id

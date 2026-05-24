@@ -31,7 +31,7 @@ export default function AttackGraph() {
   const [edges, setEdges, onEdgesChange] = useEdgesState([])
 
   useEffect(() => {
-    const styledNodes: any[] = graphNodes.map((n) => ({
+    const styledNodes: any[] = (graphNodes || []).map((n) => ({
       ...n,
       className: blastRadiusNodes.has(n.id) ? 'blast-pulse' : '',
       style: {
@@ -45,7 +45,7 @@ export default function AttackGraph() {
   }, [graphNodes, blastRadiusNodes, setNodes])
 
   useEffect(() => {
-    const styledEdges: any[] = graphEdges.map((e) => ({
+    const styledEdges: any[] = (graphEdges || []).map((e) => ({
       ...e,
       type: 'smoothstep',
     }))

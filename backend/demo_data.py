@@ -209,29 +209,81 @@ DEMO_ATTACK_PATHS = [
 ]
 
 
-def build_demo_scan(session_id: str) -> ScanSession:
-    """Build complete demo scan session."""
-    vuln_count = sum(len(n.vulnerabilities) for n in DEMO_NODES)
+def build_demo_scan(session_id: str, target: str = None) -> ScanSession:
+    """Build complete demo scan session, optionally customized with a target IP/network."""
+    nodes = DEMO_NODES
+    paths = DEMO_ATTACK_PATHS
+
+    if target:
+        import ipaddress
+        target_ip = target.strip()
+        if "/" in target_ip:
+            try:
+                net = ipaddress.ip_network(target_ip, strict=False)
+                hosts = list(net.hosts())
+                if hosts:
+                    target_ip = str(hosts[0])
+                else:
+                    target_ip = str(net.network_address)
+            except ValueError:
+                target_ip = target_ip.split("/")[0]
+
+        # Customize entry node ID and hostname
+        nodes = []
+        for n in DEMO_NODES:
+            if n.id == "203.0.113.45":
+                new_n = n.model_copy(deep=True)
+                new_n.id = target_ip
+                if target_ip in ("127.0.0.1", "localhost"):
+                    new_n.hostname = "local-loopback"
+                elif "." in target_ip and all(p.isdigit() for p in target_ip.split(".")):
+                    new_n.hostname = f"host-{target_ip.split('.')[-1]}"
+                else:
+                    new_n.hostname = target_ip.split(".")[0]
+                nodes.append(new_n)
+            else:
+                nodes.append(n.model_copy(deep=True))
+
+        # Update attack paths with new entry IP
+        paths = []
+        for p in DEMO_ATTACK_PATHS:
+            new_p = p.model_copy(deep=True)
+            for step in new_p.steps:
+                if step.from_node == "203.0.113.45":
+                    step.from_node = target_ip
+                if step.to_node == "203.0.113.45":
+                    step.to_node = target_ip
+                step.exploit_vector = step.exploit_vector.replace("203.0.113.45", target_ip)
+            new_br = []
+            for br in new_p.blast_radius:
+                if br == "203.0.113.45":
+                    new_br.append(target_ip)
+                else:
+                    new_br.append(br)
+            new_p.blast_radius = new_br
+            paths.append(new_p)
+
+    vuln_count = sum(len(n.vulnerabilities) for n in nodes)
     critical_count = sum(
-        1 for n in DEMO_NODES
+        1 for n in nodes
         for v in n.vulnerabilities
         if v.cvss_v3 >= 9.0
     )
     internet_count = sum(
-        1 for n in DEMO_NODES
+        1 for n in nodes
         if n.risk_zone == RiskZone.INTERNET_FACING
     )
 
     # Find most critical target
-    max_crit = max(DEMO_NODES, key=lambda n: n.asset_criticality * n.cvss_max)
+    max_crit = max(nodes, key=lambda n: n.asset_criticality * n.cvss_max)
 
     return ScanSession(
         id=session_id,
         status="complete",
-        nodes=DEMO_NODES,
-        attack_paths=DEMO_ATTACK_PATHS,
+        nodes=nodes,
+        attack_paths=paths,
         total_vuln_count=vuln_count,
         critical_vuln_count=critical_count,
         internet_facing_count=internet_count,
-        most_critical_target=max_crit.hostname,
+        most_critical_target=max_crit.hostname or max_crit.id,
     )

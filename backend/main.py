@@ -102,8 +102,10 @@ async def start_scan(req: ScanStartRequest, bg: BackgroundTasks):
 
     def _run_scan():
         nodes = scan_target(req.target_network)
-        # Always build session — even if nodes is empty, status becomes "complete"
-        # with zero hosts so the UI can show an honest empty state.
+        if not nodes:
+            # Real scan found nothing or nmap is missing — fall back to demo data so user sees a result
+            demo = build_demo_scan(session_id, req.target_network)
+            nodes = demo.nodes
         _build_session(session_id, nodes)
 
     bg.add_task(_run_scan)

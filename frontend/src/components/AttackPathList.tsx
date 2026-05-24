@@ -76,7 +76,7 @@ export default function AttackPathList() {
               </div>
 
               <div className="flex gap-1.5 mt-2.5">
-                {path.mitre_tactics.map((t) => (
+                {(path.mitre_tactics || []).map((t) => (
                   <span
                     key={t}
                     className="text-[10px] bg-dark-600 text-gray-400 px-2 py-0.5 rounded-full border border-dark-500/50"
@@ -124,7 +124,7 @@ export default function AttackPathList() {
                         <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-dark-600" />
 
                         <div className="space-y-3">
-                          {path.steps.map((step, i) => (
+                          {(path.steps || []).map((step, i) => (
                             <div key={i} className="relative flex items-start gap-3">
                               <div
                                 className="flex-shrink-0 w-6 h-6 rounded-full bg-red-600/20 border-2 border-red-500/40 flex items-center justify-center text-[10px] font-bold text-red-300 z-10"
@@ -169,7 +169,7 @@ function KillChainView({ narrative }: { narrative: KillChainNarrative }) {
         <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-dark-600" />
 
         <div className="space-y-4">
-          {narrative.steps.map((step) => (
+          {(narrative.steps || []).map((step) => (
             <div key={step.step} className="relative">
               <div className="absolute left-[-1.5rem] top-1.5 w-2.5 h-2.5 rounded-full bg-purple-500/30 border border-purple-500/50 z-10" />
               <div>

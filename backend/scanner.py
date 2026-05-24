@@ -2,6 +2,13 @@
 
 import ipaddress
 import logging
+import os
+
+# Ensure common macOS binary paths are in environment PATH
+for p_dir in ["/opt/homebrew/bin", "/usr/local/bin"]:
+    if p_dir not in os.environ.get("PATH", "").split(os.pathsep):
+        os.environ["PATH"] = f"{p_dir}{os.pathsep}{os.environ.get('PATH', '')}"
+
 import nmap
 
 from models import NetworkNode, PortInfo, Vulnerability, RiskZone

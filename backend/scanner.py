@@ -8,6 +8,14 @@ from models import NetworkNode, PortInfo, Vulnerability, RiskZone
 
 logger = logging.getLogger(__name__)
 
+# Check if nmap binary is available
+_nmap_available = True
+try:
+    nm = nmap.PortScanner()
+except nmap.PortScannerError:
+    _nmap_available = False
+    logger.warning("nmap binary not found — scan endpoint will return an error")
+
 # Common ports to scan for faster results
 COMMON_PORTS = "22,80,443,445,139,3389,3306,5432,6379,8080,8443,27017,11211,25,53,110,143,993,995,21,23"
 
@@ -127,6 +135,10 @@ def _classify_zone(ip_str: str) -> RiskZone:
 
 def scan_target(target: str) -> list[NetworkNode]:
     """Run nmap scan against a target and return discovered nodes."""
+    if not _nmap_available:
+        logger.error("nmap not available — cannot scan")
+        return []
+
     nm = nmap.PortScanner()
     nodes: list[NetworkNode] = []
 

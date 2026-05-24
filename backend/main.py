@@ -12,6 +12,7 @@ from models import (
     ScanSession, ScanStartRequest, RemediateRequest,
 )
 from demo_data import build_demo_scan
+from scanner import scan_target
 from graph_engine import build_network_graph, get_reachable_nodes, discover_attack_paths
 from risk_scoring import enrich_vulnerabilities, get_risk_summary
 from ai_engine import generate_remediation, generate_executive_summary, generate_kill_chain
@@ -40,18 +41,42 @@ app.add_middleware(
 )
 
 
+def _build_session(session_id: str, nodes: list) -> ScanSession:
+    """Build a scan session from node list: enrich, graph, paths."""
+    enriched = enrich_vulnerabilities(nodes)
+    G = build_network_graph(enriched)
+    graphs[session_id] = G
+    paths = discover_attack_paths(enriched, G)
+
+    internet_facing = sum(1 for n in enriched if n.risk_zone.value == "INTERNET_FACING")
+    total_vulns = sum(len(n.vulnerabilities) for n in enriched)
+    critical_vulns = sum(
+        sum(1 for v in n.vulnerabilities if v.cvss_v3 >= 9.0)
+        for n in enriched
+    )
+    most_critical = None
+    if paths:
+        most_critical = paths[0].blast_radius[-1] if paths[0].blast_radius else None
+
+    session = ScanSession(
+        id=session_id,
+        status="complete",
+        nodes=enriched,
+        attack_paths=paths,
+        total_vuln_count=total_vulns,
+        critical_vuln_count=critical_vulns,
+        internet_facing_count=internet_facing,
+        most_critical_target=most_critical,
+    )
+    sessions[session_id] = session
+    return session
+
+
 def _create_demo_session() -> str:
     """Create and store a demo scan session. Returns session ID."""
     session_id = f"demo-{str(uuid.uuid4())[:6]}"
     session = build_demo_scan(session_id)
-    nodes = enrich_vulnerabilities(session.nodes)
-    session.nodes = nodes
-    G = build_network_graph(nodes)
-    graphs[session_id] = G
-    computed_paths = discover_attack_paths(nodes, G)
-    if computed_paths:
-        session.attack_paths = computed_paths
-    sessions[session_id] = session
+    _build_session(session_id, session.nodes)
     return session_id
 
 
@@ -69,9 +94,13 @@ async def load_demo():
 
 @app.post("/api/v1/scan/start")
 async def start_scan(req: ScanStartRequest):
-    """Start new scan — returns demo data for hackathon."""
-    session_id = _create_demo_session()
-    return {"session_id": session_id, "status": "complete"}
+    """Start a real network scan against the target."""
+    session_id = f"scan-{str(uuid.uuid4())[:6]}"
+    nodes = scan_target(req.target_network)
+    if not nodes:
+        return {"error": "No hosts discovered. Check the target range."}, 404
+    _build_session(session_id, nodes)
+    return {"session_id": session_id, "status": "complete", "hosts_found": len(nodes)}
 
 
 @app.get("/api/v1/scan/{session_id}")

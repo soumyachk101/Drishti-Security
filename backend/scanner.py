@@ -17,7 +17,7 @@ except nmap.PortScannerError:
     logger.warning("nmap binary not found — scan endpoint will return an error")
 
 # Common ports to scan for faster results
-COMMON_PORTS = "22,80,443,445,139,3389,3306,5432,6379,8080,8443,27017,11211,25,53,110,143,993,995,21,23"
+COMMON_PORTS = "22,80,443,445,3389,3306,5432,6379,8080,27017,21,25,53"
 
 # Map discovered services to known CVEs with realistic scores
 SERVICE_CVE_MAP: dict[str, list[dict]] = {

@@ -20,6 +20,10 @@ export default function App() {
     return <LandingPage onStartScan={handleStartScan} onLoadDemo={handleLoadDemo} loading={loading} />
   }
 
+  if (loading) {
+    return <div className="h-screen flex items-center justify-center bg-hero-bg"><div className="text-center"><div className="w-10 h-10 border-2 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" /><p className="text-muted-foreground text-sm">Scanning your network...</p></div></div>
+  }
+
   return (
     <div className="h-screen flex flex-col bg-dark-950 text-gray-100">
       {/* Header */}

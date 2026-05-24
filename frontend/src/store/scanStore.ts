@@ -71,26 +71,33 @@ export const useScanStore = create<ScanStore>((set, get) => ({
     set({ loading: true })
     const res = await api.post('/api/v1/scan/start', { target_network: target })
     const { session_id } = res.data
+    console.log('Scan started:', session_id)
     set({ sessionId: session_id })
 
     // Poll until scan completes
     for (let i = 0; i < 60; i++) {
       await new Promise(r => setTimeout(r, 2000))
       try {
-        const scanRes = await api.get(`/api/v1/scan/${session_id}`)
+        const scanRes = await api.get('/api/v1/scan/' + session_id)
+        console.log('Poll', i, 'status:', scanRes.data.session?.status)
         if (scanRes.data.session?.status === 'complete') {
           set({ session: scanRes.data.session, summary: scanRes.data.summary })
           break
         }
         if (scanRes.data.session?.status === 'error') {
+          console.error('Scan failed')
           set({ loading: false })
           return
         }
-      } catch { /* retry */ }
+      } catch (e) {
+        console.error('Poll error:', e)
+      }
     }
 
+    console.log('Loading graph and paths...')
     await get().loadGraph(session_id)
     await get().loadPaths(session_id)
+    console.log('Scan complete, data loaded')
     set({ loading: false })
   },
 

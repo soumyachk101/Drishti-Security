@@ -55,6 +55,11 @@ def _create_demo_session() -> str:
     return session_id
 
 
+@app.get("/")
+async def root():
+    return {"service": "Drishti API", "version": "1.0.0", "docs": "/docs"}
+
+
 @app.get("/api/v1/demo")
 async def load_demo():
     """Load pre-built demo data."""

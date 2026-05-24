@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useScanStore } from '../store/scanStore'
-import type { AttackPath, KillChainNarrative } from '../types/bhishon.types'
+import type { AttackPath, KillChainNarrative } from '../types/drishti.types'
 
 export default function AttackPathList() {
   const { attackPaths, sessionId, killChain, generateKillChain } = useScanStore()

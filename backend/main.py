@@ -1,4 +1,4 @@
-"""Bhishon Security — FastAPI central server."""
+"""Drishti — AI-Powered Network Risk Intelligence platform."""
 
 import uuid
 from contextlib import asynccontextmanager
@@ -43,7 +43,7 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(title="Bhishon Security", version="1.0.0", lifespan=lifespan)
+app = FastAPI(title="Drishti", version="1.0.0", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,

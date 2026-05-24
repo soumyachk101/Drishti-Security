@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import axios from 'axios'
-import type { ScanSession, AttackPath, NetworkNode, RemediationScript, KillChainNarrative } from '../types/bhishon.types'
+import type { ScanSession, AttackPath, NetworkNode, RemediationScript, KillChainNarrative } from '../types/drishti.types'
 
 interface GraphNode {
   id: string

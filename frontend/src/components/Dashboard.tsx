@@ -32,6 +32,26 @@ export default function Dashboard() {
     )
   }
 
+  if (summary.total_nodes === 0) {
+    return (
+      <div className="p-6 text-sm text-gray-400 space-y-3">
+        <p className="font-semibold text-yellow-400">No hosts discovered</p>
+        <p className="text-xs leading-relaxed text-gray-500">
+          The cloud-hosted scanner could not reach your target. Home routers and private IPs
+          are unreachable from the public internet.
+        </p>
+        <div className="bg-dark-800 border border-dark-600 rounded-md p-3 mt-3 text-xs">
+          <p className="font-semibold text-gray-300 mb-2">Try one of these:</p>
+          <ul className="space-y-1.5 text-gray-400">
+            <li>• Scan <code className="text-primary">scanme.nmap.org</code> (Nmap's test server)</li>
+            <li>• Click <span className="text-primary">Load Demo</span> for a full sample dataset</li>
+            <li>• Run the backend locally for real scans of your network</li>
+          </ul>
+        </div>
+      </div>
+    )
+  }
+
   const stats = [
     { label: 'Nodes Scanned', value: summary.total_nodes.toString(), color: 'text-blue-400', icon: '◎' },
     { label: 'Vulnerabilities', value: summary.total_vulnerabilities.toString(), color: 'text-yellow-400', icon: '◆' },

@@ -22,7 +22,7 @@ COMMON_PARAMS = {
     "temperature": 0.2,
 }
 
-REMEDIATION_SYSTEM_PROMPT = """You are Bhishon Remediation Engine — an expert security engineer and DevOps specialist embedded in an automated vulnerability remediation system.
+REMEDIATION_SYSTEM_PROMPT = """You are Drishti Remediation Engine — an expert security engineer and DevOps specialist embedded in an automated vulnerability remediation system.
 
 Your task is to generate precise, production-safe remediation scripts for network vulnerabilities.
 
@@ -40,9 +40,9 @@ RULES:
 6. NEVER suggest rebooting a production server without explicit note.
 7. Output ONLY the script — no prose before or after, no markdown fences.
 8. For each script, embed a comment header in this exact format:
-   # BHISHON_FIX | CVE: {cve_id} | NODE: {node_ip} | TYPE: {script_type} | RISK: {risk_score}"""
+   # DRISHTI_FIX | CVE: {cve_id} | NODE: {node_ip} | TYPE: {script_type} | RISK: {risk_score}"""
 
-EXECUTIVE_SYSTEM_PROMPT = """You are Bhishon Business Intelligence Engine — a cybersecurity analyst who specializes in translating complex technical vulnerabilities into clear business risk language for C-suite executives and board members.
+EXECUTIVE_SYSTEM_PROMPT = """You are Drishti Business Intelligence Engine — a cybersecurity analyst who specializes in translating complex technical vulnerabilities into clear business risk language for C-suite executives and board members.
 
 RULES:
 1. Write in plain English. No CVE IDs, no jargon like "lateral movement" or "CVSS". Translate everything to business terms.
@@ -53,7 +53,7 @@ RULES:
 6. End with a one-sentence "Bottom Line" summary in bold.
 7. Output ONLY the summary text — no headers, no bullet points, no markdown."""
 
-KILL_CHAIN_SYSTEM_PROMPT = """You are Bhishon Threat Narrative Engine — an expert red team operator who explains attack chains from an attacker's perspective to help defenders understand exactly how they would be breached.
+KILL_CHAIN_SYSTEM_PROMPT = """You are Drishti Threat Narrative Engine — an expert red team operator who explains attack chains from an attacker's perspective to help defenders understand exactly how they would be breached.
 
 RULES:
 1. Write from the perspective of a skilled, patient attacker.
@@ -136,7 +136,7 @@ async def generate_remediation(
         raw = response.content[0].text.strip()
 
         script_type = "bash"
-        header = next((l for l in raw.split("\n") if "BHISHON_FIX" in l), None)
+        header = next((l for l in raw.split("\n") if "DRISHTI_FIX" in l), None)
         if header:
             match = re.search(r"TYPE: (\w+)", header)
             if match:
@@ -159,7 +159,7 @@ async def generate_remediation(
 
 def _fallback_remediation(vuln: Vulnerability, node: NetworkNode) -> RemediationScript:
     """Fallback remediation when API unavailable."""
-    content = f"""# BHISHON_FIX | CVE: {vuln.cve_id} | NODE: {node.id} | TYPE: bash | RISK: {vuln.cvss_v3}
+    content = f"""# DRISHTI_FIX | CVE: {vuln.cve_id} | NODE: {node.id} | TYPE: bash | RISK: {vuln.cvss_v3}
 # WHY PRIORITIZED: CVSS {vuln.cvss_v3}, EPSS {vuln.epss_score:.0%} exploitation probability.
 # Financial risk: ${vuln.financial_risk_usd or 0:,.0f}
 

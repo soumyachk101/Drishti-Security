@@ -26,20 +26,6 @@ ws_connections: dict[str, list[WebSocket]] = {}
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # Seed demo data on startup
-    demo_session = build_demo_scan("demo-001")
-    nodes = enrich_vulnerabilities(demo_session.nodes)
-    demo_session.nodes = nodes
-    G = build_network_graph(nodes)
-    graphs["demo-001"] = G
-    # Compute attack paths from graph engine
-    computed_paths = discover_attack_paths(nodes, G)
-    if computed_paths:
-        demo_session.attack_paths = computed_paths
-        demo_session.most_critical_target = max(
-            nodes, key=lambda n: n.asset_criticality * n.cvss_max
-        ).hostname
-    sessions["demo-001"] = demo_session
     yield
 
 
@@ -54,21 +40,33 @@ app.add_middleware(
 )
 
 
-@app.post("/api/v1/scan/start")
-async def start_scan(req: ScanStartRequest):
-    """Start new scan — returns demo data for hackathon."""
-    session_id = str(uuid.uuid4())[:8]
+def _create_demo_session() -> str:
+    """Create and store a demo scan session. Returns session ID."""
+    session_id = f"demo-{str(uuid.uuid4())[:6]}"
     session = build_demo_scan(session_id)
     nodes = enrich_vulnerabilities(session.nodes)
     session.nodes = nodes
     G = build_network_graph(nodes)
     graphs[session_id] = G
-    # Compute attack paths from graph engine
     computed_paths = discover_attack_paths(nodes, G)
     if computed_paths:
         session.attack_paths = computed_paths
     sessions[session_id] = session
-    return {"session_id": session_id, "status": session.status}
+    return session_id
+
+
+@app.get("/api/v1/demo")
+async def load_demo():
+    """Load pre-built demo data."""
+    session_id = _create_demo_session()
+    return {"session_id": session_id, "status": "complete"}
+
+
+@app.post("/api/v1/scan/start")
+async def start_scan(req: ScanStartRequest):
+    """Start new scan — returns demo data for hackathon."""
+    session_id = _create_demo_session()
+    return {"session_id": session_id, "status": "complete"}
 
 
 @app.get("/api/v1/scan/{session_id}")

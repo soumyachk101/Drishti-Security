@@ -40,7 +40,8 @@ interface ScanStore {
   loading: boolean
   remediationLoading: boolean
 
-  startScan: () => Promise<void>
+  startScan: (target: string) => Promise<void>
+  startScanDemo: () => Promise<void>
   loadScan: (sessionId: string) => Promise<void>
   loadGraph: (sessionId: string) => Promise<void>
   loadPaths: (sessionId: string) => Promise<void>
@@ -66,9 +67,20 @@ export const useScanStore = create<ScanStore>((set, get) => ({
   loading: false,
   remediationLoading: false,
 
-  startScan: async () => {
+  startScan: async (target: string) => {
     set({ loading: true })
-    const res = await axios.post('/api/v1/scan/start', { target_network: '192.168.1.0/24' })
+    const res = await axios.post('/api/v1/scan/start', { target_network: target })
+    const { session_id } = res.data
+    set({ sessionId: session_id })
+    await get().loadScan(session_id)
+    await get().loadGraph(session_id)
+    await get().loadPaths(session_id)
+    set({ loading: false })
+  },
+
+  startScanDemo: async () => {
+    set({ loading: true })
+    const res = await axios.get('/api/v1/demo')
     const { session_id } = res.data
     set({ sessionId: session_id })
     await get().loadScan(session_id)

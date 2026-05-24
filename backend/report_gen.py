@@ -18,7 +18,7 @@ def generate_report_html(session: ScanSession) -> str:
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Bhishon Security Report — Session {session.id}</title>
+<title>Drishti Security Report — Session {session.id}</title>
 <style>
   * {{ margin: 0; padding: 0; box-sizing: border-box; }}
   body {{ font-family: 'Inter', -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; padding: 40px; }}
@@ -64,7 +64,7 @@ def generate_report_html(session: ScanSession) -> str:
 <div class="page">
 
 <div class="header">
-  <h1>Bhishon Security — Risk Intelligence Report</h1>
+  <h1>Drishti — Risk Intelligence Report</h1>
   <p>Session: {session.id} | Generated: {datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")} | Status: {session.status.upper()}</p>
 </div>
 
@@ -125,7 +125,7 @@ def generate_report_html(session: ScanSession) -> str:
 </div>
 
 <div class="footer">
-  Bhishon Security — AI-Powered Network Risk Intelligence Platform<br/>
+  Drishti — AI-Powered Network Risk Intelligence Platform<br/>
   Report generated for hackathon demonstration purposes.
 </div>
 

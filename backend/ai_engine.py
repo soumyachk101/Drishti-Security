@@ -1,11 +1,12 @@
-"""Claude API integration — remediation, executive summary, kill chain."""
+"""Groq API integration — remediation, executive summary, kill chain."""
 
 import os
 import re
+import json
 import logging
 from datetime import datetime
 
-import anthropic
+from openai import AsyncOpenAI
 
 from models import (
     Vulnerability, NetworkNode, AttackPath, ScanSession, RemediationScript,
@@ -13,14 +14,21 @@ from models import (
 
 logger = logging.getLogger(__name__)
 
-client = anthropic.Anthropic(api_key=os.environ.get("ANTHROPIC_API_KEY", ""))
+GROQ_API_KEY = os.environ.get("GROQ_API_KEY", "")
+MODEL = "llama-3.3-70b-versatile"
 
-MODEL = "claude-opus-4-5"
-COMMON_PARAMS = {
-    "model": MODEL,
-    "max_tokens": 2000,
-    "temperature": 0.2,
-}
+_client: AsyncOpenAI | None = None
+
+
+def _get_client() -> AsyncOpenAI:
+    global _client
+    if _client is None:
+        _client = AsyncOpenAI(
+            api_key=GROQ_API_KEY,
+            base_url="https://api.groq.com/openai/v1",
+        )
+    return _client
+
 
 REMEDIATION_SYSTEM_PROMPT = """You are Drishti Remediation Engine — an expert security engineer and DevOps specialist embedded in an automated vulnerability remediation system.
 
@@ -118,22 +126,24 @@ async def generate_remediation(
     node: NetworkNode,
     path: AttackPath | None = None,
 ) -> RemediationScript:
-    """Generate remediation script via Claude API."""
+    """Generate remediation script via Groq API."""
     prompt = _build_remediation_prompt(vuln, node, path)
 
-    # Fallback if no API key
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    if not GROQ_API_KEY:
         return _fallback_remediation(vuln, node)
 
     try:
-        response = await anthropic.AsyncAnthropic(
-            api_key=os.environ["ANTHROPIC_API_KEY"]
-        ).messages.create(
-            **COMMON_PARAMS,
-            system=REMEDIATION_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": prompt}],
+        client = _get_client()
+        response = await client.chat.completions.create(
+            model=MODEL,
+            max_tokens=2000,
+            temperature=0.2,
+            messages=[
+                {"role": "system", "content": REMEDIATION_SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
         )
-        raw = response.content[0].text.strip()
+        raw = response.choices[0].message.content.strip()
 
         script_type = "bash"
         header = next((l for l in raw.split("\n") if "DRISHTI_FIX" in l), None)
@@ -149,11 +159,8 @@ async def generate_remediation(
             generated_at=datetime.utcnow().isoformat(),
             cve_id=vuln.cve_id,
         )
-    except anthropic.RateLimitError:
-        logger.warning("Claude rate limit hit, using fallback")
-        return _fallback_remediation(vuln, node)
     except Exception as e:
-        logger.error(f"Claude API error: {e}")
+        logger.error(f"Groq API error (remediation): {e}")
         return _fallback_remediation(vuln, node)
 
 
@@ -187,7 +194,7 @@ apt-get update && apt-get upgrade -y {vuln.affected_service}
 
 async def generate_executive_summary(session: ScanSession) -> str:
     """Generate plain-English executive summary."""
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    if not GROQ_API_KEY:
         return _fallback_executive(session)
 
     top_paths = session.attack_paths[:3]
@@ -223,14 +230,17 @@ Industry: Technology/Software
 Organization size: Mid-market"""
 
     try:
-        response = await anthropic.AsyncAnthropic(
-            api_key=os.environ["ANTHROPIC_API_KEY"]
-        ).messages.create(
-            **COMMON_PARAMS,
-            system=EXECUTIVE_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": prompt}],
+        client = _get_client()
+        response = await client.chat.completions.create(
+            model=MODEL,
+            max_tokens=2000,
+            temperature=0.2,
+            messages=[
+                {"role": "system", "content": EXECUTIVE_SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
         )
-        return response.content[0].text.strip()
+        return response.choices[0].message.content.strip()
     except Exception as e:
         logger.error(f"Executive summary error: {e}")
         return _fallback_executive(session)
@@ -252,7 +262,7 @@ def _fallback_executive(session: ScanSession) -> str:
 
 async def generate_kill_chain(path: AttackPath) -> dict:
     """Generate attacker's-eye-view kill chain narrative."""
-    if not os.environ.get("ANTHROPIC_API_KEY"):
+    if not GROQ_API_KEY:
         return _fallback_kill_chain(path)
 
     steps_text = "\n".join(
@@ -275,15 +285,17 @@ Entry point: Publicly accessible from internet
 Attacker skill level: Intermediate (uses known CVEs + public exploits)"""
 
     try:
-        response = await anthropic.AsyncAnthropic(
-            api_key=os.environ["ANTHROPIC_API_KEY"]
-        ).messages.create(
-            **COMMON_PARAMS,
-            system=KILL_CHAIN_SYSTEM_PROMPT,
-            messages=[{"role": "user", "content": prompt}],
+        client = _get_client()
+        response = await client.chat.completions.create(
+            model=MODEL,
+            max_tokens=2000,
+            temperature=0.2,
+            messages=[
+                {"role": "system", "content": KILL_CHAIN_SYSTEM_PROMPT},
+                {"role": "user", "content": prompt},
+            ],
         )
-        import json
-        return json.loads(response.content[0].text)
+        return json.loads(response.choices[0].message.content)
     except Exception as e:
         logger.error(f"Kill chain error: {e}")
         return _fallback_kill_chain(path)

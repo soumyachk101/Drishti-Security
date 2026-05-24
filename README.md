@@ -12,7 +12,7 @@
 2. **Builds an interactive attack graph** showing how an attacker can pivot through your environment.
 3. **Ranks attack paths** by financial blast radius, EPSS, CVSS, and zone multipliers.
 4. **Generates AI remediation** (Ansible / bash / Terraform / iptables) per vulnerability with rollback steps.
-5. **Writes executive summaries and kill-chain narratives** in plain business English via Claude.
+5. **Writes executive summaries and kill-chain narratives** in plain business English via Groq.
 6. **Exports HTML reports** with the full vulnerability inventory and a remediation roadmap.
 
 ---
@@ -40,7 +40,7 @@ Submitting from either the hero or the request-access section creates a session 
 |---|---|
 | Backend | Python 3.11+ · FastAPI · Uvicorn |
 | Graph engine | NetworkX (directed graph + shortest-path attack discovery) |
-| AI | Anthropic Claude (`claude-opus-4-5`) for remediation, exec summaries, kill chains |
+| AI | Groq (llama-3.3-70b-versatile) (`llama-3.3-70b-versatile`) for remediation, exec summaries, kill chains |
 | Data models | Pydantic v2 |
 | Frontend | React 18 · TypeScript · Vite |
 | Styling | Tailwind CSS · `tailwindcss-animate` · `class-variance-authority` · `tailwind-merge` |
@@ -106,11 +106,11 @@ Visit **http://localhost:5173**, scroll the landing page, then click **Load Demo
 ### Optional: enable AI features
 
 ```bash
-export ANTHROPIC_API_KEY=sk-ant-...
+export GROQ_API_KEY=gsk_...
 python backend/main.py
 ```
 
-This activates Claude-powered remediation scripts, executive summaries, and kill-chain narratives.
+This activates Groq-powered remediation scripts, executive summaries, and kill-chain narratives.
 
 ---
 
@@ -164,7 +164,7 @@ Drishti/
 │   ├── models.py            # Pydantic data models
 │   ├── graph_engine.py      # NetworkX construction + attack-path discovery
 │   ├── risk_scoring.py      # Financial risk formula + vuln enrichment
-│   ├── ai_engine.py         # Claude integration (remediation / summary / kill chain)
+│   ├── ai_engine.py         # Groq integration (remediation / summary / kill chain)
 │   ├── demo_data.py         # 5-node demo topology with realistic CVEs
 │   ├── report_gen.py        # Styled HTML risk-report generator
 │   └── requirements.txt
@@ -238,7 +238,7 @@ Custom keyframes (Tailwind `animate-fade-up`, `animate-fade-in`) drive the stagg
 | `GET` | `/api/v1/graph/{session_id}` | Nodes + edges shaped for xyflow |
 | `GET` | `/api/v1/paths/{session_id}` | Ranked attack paths |
 | `GET` | `/api/v1/graph/{session_id}/blast-radius/{node_id}` | Reachable nodes from a compromised asset |
-| `POST` | `/api/v1/remediate` | Claude-generated fix script for a vuln |
+| `POST` | `/api/v1/remediate` | Groq-generated fix script for a vuln |
 | `GET` | `/api/v1/executive-summary/{session_id}` | Plain-English exec summary |
 | `GET` | `/api/v1/kill-chain/{session_id}/{path_id}` | Attacker-perspective narrative for a path |
 | `GET` | `/api/v1/report/{session_id}` | Full HTML risk report |
@@ -282,7 +282,7 @@ Financial Risk  =  $2,180,000              # IBM India avg breach cost baseline
 - The Spline scene (`https://prod.spline.design/Slk6b8kz3LRlKiyk/scene.splinecode`) is lazy-loaded with `React.lazy` + `Suspense` to keep the initial bundle small.
 - The hero content uses `pointer-events-none` so the Spline scene stays fully interactive; CTAs re-enable input with `pointer-events-auto`.
 - Smooth scrolling is enabled globally (`html { scroll-behavior: smooth }`); each section uses `scroll-mt-20` so anchor jumps clear the fixed navbar.
-- Without `ANTHROPIC_API_KEY`, AI endpoints return deterministic fallbacks so the demo still works end-to-end.
+- Without `GROQ_API_KEY`, AI endpoints return deterministic fallbacks so the demo still works end-to-end.
 
 ---
 

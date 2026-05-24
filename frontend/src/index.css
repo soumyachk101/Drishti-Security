@@ -26,11 +26,11 @@
   /* Keep legacy variables for fallback/compatibility */
   --accent-red: #ef4444;
   --accent-orange: #f97316;
-  --dark-950: #090b10;
-  --dark-900: #0f1117;
-  --dark-800: #161822;
-  --dark-700: #1e2030;
-  --dark-600: #2a2d3e;
+  --dark-950: #141414;
+  --dark-900: #1a1a1a;
+  --dark-800: #1f1f1f;
+  --dark-700: #262626;
+  --dark-600: #333333;
 }
 
 * {

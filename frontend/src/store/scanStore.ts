@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import axios from 'axios'
+import api from '../lib/api'
 import type { ScanSession, AttackPath, NetworkNode, RemediationScript, KillChainNarrative } from '../types/drishti.types'
 
 interface GraphNode {
@@ -69,7 +69,7 @@ export const useScanStore = create<ScanStore>((set, get) => ({
 
   startScan: async (target: string) => {
     set({ loading: true })
-    const res = await axios.post('/api/v1/scan/start', { target_network: target })
+    const res = await api.post('/api/v1/scan/start', { target_network: target })
     const { session_id } = res.data
     set({ sessionId: session_id })
     await get().loadScan(session_id)
@@ -80,7 +80,7 @@ export const useScanStore = create<ScanStore>((set, get) => ({
 
   startScanDemo: async () => {
     set({ loading: true })
-    const res = await axios.get('/api/v1/demo')
+    const res = await api.get('/api/v1/demo')
     const { session_id } = res.data
     set({ sessionId: session_id })
     await get().loadScan(session_id)
@@ -90,17 +90,17 @@ export const useScanStore = create<ScanStore>((set, get) => ({
   },
 
   loadScan: async (sessionId: string) => {
-    const res = await axios.get(`/api/v1/scan/${sessionId}`)
+    const res = await api.get(`/api/v1/scan/${sessionId}`)
     set({ session: res.data.session, summary: res.data.summary })
   },
 
   loadGraph: async (sessionId: string) => {
-    const res = await axios.get(`/api/v1/graph/${sessionId}`)
+    const res = await api.get(`/api/v1/graph/${sessionId}`)
     set({ graphNodes: res.data.nodes, graphEdges: res.data.edges })
   },
 
   loadPaths: async (sessionId: string) => {
-    const res = await axios.get(`/api/v1/paths/${sessionId}`)
+    const res = await api.get(`/api/v1/paths/${sessionId}`)
     set({ attackPaths: res.data.paths })
   },
 
@@ -109,13 +109,13 @@ export const useScanStore = create<ScanStore>((set, get) => ({
   },
 
   loadBlastRadius: async (sessionId, nodeId) => {
-    const res = await axios.get(`/api/v1/graph/${sessionId}/blast-radius/${nodeId}`)
+    const res = await api.get(`/api/v1/graph/${sessionId}/blast-radius/${nodeId}`)
     set({ blastRadiusNodes: new Set(res.data.blast_radius) })
   },
 
   generateRemediation: async (sessionId, cveId, nodeId) => {
     set({ remediationLoading: true, remediation: null })
-    const res = await axios.post('/api/v1/remediate', {
+    const res = await api.post('/api/v1/remediate', {
       session_id: sessionId,
       cve_id: cveId,
       node_id: nodeId,
@@ -124,12 +124,12 @@ export const useScanStore = create<ScanStore>((set, get) => ({
   },
 
   generateKillChain: async (sessionId, pathId) => {
-    const res = await axios.get(`/api/v1/kill-chain/${sessionId}/${pathId}`)
+    const res = await api.get(`/api/v1/kill-chain/${sessionId}/${pathId}`)
     set({ killChain: res.data.narrative })
   },
 
   generateExecutiveSummary: async (sessionId) => {
-    const res = await axios.get(`/api/v1/executive-summary/${sessionId}`)
+    const res = await api.get(`/api/v1/executive-summary/${sessionId}`)
     set({ executiveSummary: res.data.summary })
   },
 }))

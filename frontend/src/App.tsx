@@ -27,14 +27,14 @@ export default function App() {
   return (
     <div className="h-screen flex flex-col bg-dark-950 text-gray-100">
       {/* Header */}
-      <header className="flex items-center justify-between px-6 py-3 bg-dark-900 border-b border-dark-600/60 backdrop-blur-sm">
+      <header className="flex items-center justify-between px-6 py-3 bg-hero-bg border-b border-border/40 backdrop-blur-sm">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-lg bg-gradient-to-br from-red-600 to-orange-500 flex items-center justify-center shadow-md shadow-red-600/10">
-            <span className="font-extrabold text-white text-sm">D</span>
+          <div className="w-9 h-9 rounded-lg bg-primary/15 border border-primary/30 flex items-center justify-center">
+            <span className="font-bold text-primary text-sm">D</span>
           </div>
           <div>
-            <h1 className="text-base font-bold tracking-tight">Drishti</h1>
-            <p className="text-[11px] text-gray-500">Network Risk Intelligence</p>
+            <h1 className="text-base font-semibold tracking-tight text-foreground uppercase">DRISHTI</h1>
+            <p className="text-[11px] text-muted-foreground tracking-wider uppercase">Network Risk Intelligence</p>
           </div>
         </div>
         <div className="flex items-center gap-3">

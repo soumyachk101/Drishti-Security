@@ -23,7 +23,14 @@ export default function Dashboard() {
     window.open(`/api/v1/report/${sessionId}`, '_blank')
   }
 
-  if (!session || !summary) return null
+  if (!session || !summary) {
+    return (
+      <div className="p-6 text-center text-gray-500 text-sm">
+        <p>No scan data available.</p>
+        <p className="text-xs mt-2 text-gray-600">Click "New Scan" to try again.</p>
+      </div>
+    )
+  }
 
   const stats = [
     { label: 'Nodes Scanned', value: summary.total_nodes.toString(), color: 'text-blue-400', icon: '◎' },

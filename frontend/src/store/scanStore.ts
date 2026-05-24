@@ -68,37 +68,44 @@ export const useScanStore = create<ScanStore>((set, get) => ({
   remediationLoading: false,
 
   startScan: async (target: string) => {
-    set({ loading: true })
-    const res = await api.post('/api/v1/scan/start', { target_network: target })
-    const { session_id } = res.data
-    console.log('Scan started:', session_id)
-    set({ sessionId: session_id })
+    set({ loading: true, session: null, summary: null, graphNodes: [], graphEdges: [], attackPaths: [] })
+    try {
+      const res = await api.post('/api/v1/scan/start', { target_network: target })
+      const { session_id } = res.data
+      console.log('Scan started:', session_id)
+      set({ sessionId: session_id })
 
-    // Poll until scan completes
-    for (let i = 0; i < 60; i++) {
-      await new Promise(r => setTimeout(r, 2000))
-      try {
-        const scanRes = await api.get('/api/v1/scan/' + session_id)
-        console.log('Poll', i, 'status:', scanRes.data.session?.status)
-        if (scanRes.data.session?.status === 'complete') {
-          set({ session: scanRes.data.session, summary: scanRes.data.summary })
-          break
+      // Poll until scan completes (max 30 attempts × 2s = 60s)
+      let completed = false
+      for (let i = 0; i < 30; i++) {
+        await new Promise(r => setTimeout(r, 2000))
+        try {
+          const scanRes = await api.get('/api/v1/scan/' + session_id)
+          const status = scanRes.data.session?.status
+          console.log('Poll', i, 'status:', status)
+          if (status === 'complete') {
+            set({ session: scanRes.data.session, summary: scanRes.data.summary })
+            completed = true
+            break
+          }
+        } catch (e) {
+          console.error('Poll error:', e)
         }
-        if (scanRes.data.session?.status === 'error') {
-          console.error('Scan failed')
-          set({ loading: false })
-          return
-        }
-      } catch (e) {
-        console.error('Poll error:', e)
       }
-    }
 
-    console.log('Loading graph and paths...')
-    await get().loadGraph(session_id)
-    await get().loadPaths(session_id)
-    console.log('Scan complete, data loaded')
-    set({ loading: false })
+      if (!completed) {
+        console.warn('Scan polling timed out — loading whatever data exists')
+        await get().loadScan(session_id)
+      }
+
+      await get().loadGraph(session_id)
+      await get().loadPaths(session_id)
+      console.log('Scan flow complete')
+    } catch (e) {
+      console.error('Scan failed:', e)
+    } finally {
+      set({ loading: false })
+    }
   },
 
   startScanDemo: async () => {

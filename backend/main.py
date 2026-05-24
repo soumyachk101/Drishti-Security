@@ -95,18 +95,15 @@ async def load_demo():
 
 @app.post("/api/v1/scan/start")
 async def start_scan(req: ScanStartRequest, bg: BackgroundTasks):
-    """Start a network scan — returns immediately, scans in background.
-    Falls back to demo data if real scan finds nothing (e.g., target unreachable
-    from the server's network)."""
+    """Start a real nmap scan — returns immediately, scans in background.
+    Backend must run on a host with network reach to the target."""
     session_id = f"scan-{str(uuid.uuid4())[:6]}"
     sessions[session_id] = ScanSession(id=session_id, status="scanning")
 
     def _run_scan():
         nodes = scan_target(req.target_network)
-        if not nodes:
-            # Real scan found nothing — fall back to demo data so user sees a result
-            demo = build_demo_scan(session_id)
-            nodes = demo.nodes
+        # Always build session — even if nodes is empty, status becomes "complete"
+        # with zero hosts so the UI can show an honest empty state.
         _build_session(session_id, nodes)
 
     bg.add_task(_run_scan)

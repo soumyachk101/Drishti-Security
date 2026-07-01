@@ -81,3 +81,23 @@ class RemediateRequest(BaseModel):
     session_id: str
     cve_id: str
     node_id: str
+
+
+class EdgeNode(BaseModel):
+    ip: str
+    hostname: Optional[str] = None
+    os: Optional[str] = None
+    open_ports: list[dict] = []
+    cves: list[dict] = []
+
+
+class EdgeReportRequest(BaseModel):
+    agent_ip: str
+    timestamp: str
+    nodes: list[EdgeNode]
+
+
+class Web3ShareRequest(BaseModel):
+    session_id: str
+    node_id: str
+    cve_id: str

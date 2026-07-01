@@ -10,14 +10,16 @@ from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 
 from models import (
-    ScanSession, ScanStartRequest, RemediateRequest,
+    ScanSession, ScanStartRequest, RemediateRequest, EdgeReportRequest, Web3ShareRequest,
+    NetworkNode, PortInfo, Vulnerability, RiskZone
 )
 from demo_data import build_demo_scan
-from scanner import scan_target
+from scanner import scan_target, _classify_zone
 from graph_engine import build_network_graph, get_reachable_nodes, discover_attack_paths
 from risk_scoring import enrich_vulnerabilities, get_risk_summary
 from ai_engine import generate_remediation, generate_executive_summary, generate_kill_chain
 from report_gen import generate_report_html
+from web3_sharing import web3_client
 
 
 # In-memory stores
@@ -110,6 +112,56 @@ async def start_scan(req: ScanStartRequest, bg: BackgroundTasks):
 
     bg.add_task(_run_scan)
     return {"session_id": session_id, "status": "scanning"}
+
+
+@app.post("/api/v1/agents/report")
+async def receive_edge_report(req: EdgeReportRequest, bg: BackgroundTasks):
+    """Receive scan data from a remote edge agent."""
+    session_id = f"edge-{str(uuid.uuid4())[:6]}"
+    sessions[session_id] = ScanSession(id=session_id, status="processing")
+
+    def _process_report():
+        network_nodes = []
+        for enode in req.nodes:
+            zone = _classify_zone(enode.ip)
+            criticality = 0.7 if zone == RiskZone.INTERNET_FACING else 0.5
+            
+            ports = [
+                PortInfo(
+                    port=p.get("port", 0),
+                    protocol=p.get("protocol", "tcp"),
+                    service=p.get("service", "unknown"),
+                    version=p.get("version")
+                ) for p in enode.open_ports
+            ]
+            
+            vulns = [
+                Vulnerability(
+                    cve_id=v.get("cve_id", "unknown"),
+                    cvss_v3=v.get("cvss_v3", 0.0),
+                    epss_score=v.get("epss_score", 0.0),
+                    description=v.get("description", ""),
+                    affected_service=v.get("affected_service", "unknown")
+                ) for v in enode.cves
+            ]
+            
+            cvss_max = max((v.cvss_v3 for v in vulns), default=0.0)
+            
+            network_nodes.append(NetworkNode(
+                id=enode.ip,
+                hostname=enode.hostname,
+                os=enode.os,
+                risk_zone=zone,
+                asset_criticality=criticality,
+                open_ports=ports,
+                vulnerabilities=vulns,
+                cvss_max=cvss_max
+            ))
+            
+        _build_session(session_id, network_nodes)
+        
+    bg.add_task(_process_report)
+    return {"session_id": session_id, "status": "processing"}
 
 
 @app.get("/api/v1/scan/{session_id}")
@@ -244,6 +296,36 @@ async def remediate(req: RemediateRequest):
 
     script = await generate_remediation(target_vuln, target_node, relevant_path)
     return {"script": script.model_dump()}
+
+
+@app.post("/api/v1/web3/share")
+async def share_threat_intelligence(req: Web3ShareRequest):
+    """Publish anonymized threat intelligence to the Web3 network."""
+    session = sessions.get(req.session_id)
+    if not session:
+        return {"error": "Session not found"}, 404
+        
+    target_node = None
+    target_vuln = None
+    for node in session.nodes:
+        if node.id == req.node_id:
+            target_node = node
+            for vuln in node.vulnerabilities:
+                if vuln.cve_id == req.cve_id:
+                    target_vuln = vuln
+                    break
+            break
+            
+    if not target_node or not target_vuln:
+        return {"error": "Node or vulnerability not found"}, 404
+        
+    node_info = target_node.model_dump()
+    vuln_info = target_vuln.model_dump()
+    
+    anonymized_data = web3_client.anonymize_data(node_info, vuln_info)
+    tx_receipt = web3_client.mock_publish(anonymized_data)
+    
+    return {"status": "success", "receipt": tx_receipt}
 
 
 @app.get("/api/v1/executive-summary/{session_id}")
